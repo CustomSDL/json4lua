@@ -18,7 +18,7 @@
 --   compat-5.1 if using Lua 5.0
 --
 -- CHANGELOG
---   0.9.20 Introduction of local Lua functions for private functions (removed _ function prefix). 
+--   0.9.20 Introduction of local Lua functions for private functions (removed _ function prefix).
 --          Fixed Lua 5.1 compatibility issues.
 --   		Introduced json.null to have null values in associative arrays.
 --          json.encode() performance improvement (more than 50%) through table.concat rather than ..
@@ -39,8 +39,8 @@ local table = require("table")
 local json = {}             -- Public namespace
 local json_private = {}     -- Private namespace
 
--- Public constants                                                            
-json.EMPTY_ARRAY={}                                                           
+-- Public constants
+json.EMPTY_ARRAY={}
 json.EMPTY_OBJECT={}
 
 -- Public functions
@@ -68,19 +68,19 @@ function json.encode (v)
   if v==nil then
     return "null"
   end
-  
+
   local vtype = type(v)
 
   -- Handle strings
-  if vtype=='string' then    
+  if vtype=='string' then
     return '"' .. json_private.encodeString(v) .. '"'	    -- Need to handle encoding in string
   end
-  
+
   -- Handle booleans
   if vtype=='number' or vtype=='boolean' then
     return tostring(v)
   end
-  
+
   -- Handle tables
   if vtype=='table' then
     local rval = {}
@@ -103,12 +103,12 @@ function json.encode (v)
       return '{' .. table.concat(rval,',') .. '}'
     end
   end
-  
+
   -- Handle null values
   if vtype=='function' and v==json.null then
     return 'null'
   end
-  
+
   assert(false,'encode attempt to encode unsupported type ' .. vtype .. ':' .. tostring(v))
 end
 
@@ -175,7 +175,11 @@ function decode_scanArray(s,startPos)
     assert(startPos<=stringLen,'JSON String ended unexpectedly scanning array.')
     local curChar = string.sub(s,startPos,startPos)
     if (curChar==']') then
-      return array, startPos+1
+      if #array == 0 then
+        return json.EMPTY_ARRAY, startPos+1
+      else
+        return array, startPos+1
+      end
     end
     if (curChar==',') then
       startPos = decode_scanWhitespace(s,startPos+1)
@@ -194,14 +198,14 @@ function decode_scanComment(s, startPos)
   assert( string.sub(s,startPos,startPos+1)=='/*', "decode_scanComment called but comment does not start at position " .. startPos)
   local endPos = string.find(s,'*/',startPos+2)
   assert(endPos~=nil, "Unterminated comment in string at " .. startPos)
-  return endPos+2  
+  return endPos+2
 end
 
 --- Scans for given constants: true, false or null
 -- Returns the appropriate Lua type, and the position of the next character to read.
 -- @param s The string being scanned.
 -- @param startPos The position in the string at which to start scanning.
--- @return object, int The object (true, false or nil) and the position at which the next character should be 
+-- @return object, int The object (true, false or nil) and the position at which the next character should be
 -- scanned.
 function decode_scanConstant(s, startPos)
   local consts = { ["true"] = true, ["false"] = false, ["null"] = nil }
@@ -368,7 +372,7 @@ end
 local escapeList = {
     ['"']  = '\\"',
     ['\\'] = '\\\\',
-    ['/']  = '\\/', 
+    ['/']  = '\\/',
     ['\b'] = '\\b',
     ['\f'] = '\\f',
     ['\n'] = '\\n',
@@ -388,16 +392,16 @@ end
 -- @param t The table to evaluate as an array
 -- @return boolean, number True if the table can be represented as an array, false otherwise. If true,
 -- the second returned value is the maximum
--- number of indexed elements in the array. 
+-- number of indexed elements in the array.
 function json.isArray(t)
-  -- Next we count all the elements, ensuring that any non-indexed elements are not-encodable 
+  -- Next we count all the elements, ensuring that any non-indexed elements are not-encodable
   -- (with the possible exception of 'n')
-  if (t == json.EMPTY_ARRAY) then return true, 0 end
+  if (t == json.EMPTY_ARRAY ) then return true, 0 end
   if (t == json.EMPTY_OBJECT) then return false end
   -- by default empty objects should be json object
   if (type(t)~='table') then return false end
   if next (t) == nil then return false end
-  
+
   local maxIndex = 0
   for k,v in pairs(t) do
     if (type(k)=='number' and math.floor(k)==k and 1<=k) then  -- k,v is an indexed pair
@@ -421,7 +425,7 @@ end
 -- @return boolean True if the object should be JSON encoded, false if it should be ignored.
 function isEncodable(o)
   local t = type(o)
-  return (t=='string' or t=='boolean' or t=='number' or t=='nil' or t=='table') or (t=='function' and o==json.null) 
+  return (t=='string' or t=='boolean' or t=='number' or t=='nil' or t=='table') or (t=='function' and o==json.null)
 end
 
 return json
